@@ -40,11 +40,18 @@
 
 #define MAX_NUM_ARGUMENTS 5     // Mav shell only supports four arguments
 
-int main() {
+int updateHistory(char history[][MAX_COMMAND_SIZE], int history_index, char *command_string);
+
+int main() 
+{
 
   char *command_string = (char*) malloc( MAX_COMMAND_SIZE );
-
-  while (1) {
+ 
+  char history[15][MAX_COMMAND_SIZE] = { 0 };
+  int history_index = 0;
+    
+  while (1) 
+  {
     // Print out the msh prompt
     printf ("msh> ");
 
@@ -78,7 +85,7 @@ int main() {
 
     // Tokenize the input strings with whitespace used as the delimiter
     while ( ( (argument_ptr = strsep(&working_string, WHITESPACE ) ) != NULL) && 
-              (token_count<MAX_NUM_ARGUMENTS))
+              (token_count < MAX_NUM_ARGUMENTS))
     {
       token[token_count] = strndup(argument_ptr, MAX_COMMAND_SIZE);
       if (strlen(token[token_count]) == 0)
@@ -113,13 +120,22 @@ int main() {
         printf("%s: Directory not found.\n", token[1]);
       }
     }
+    else if (strcmp("history", token[0]) == 0)
+    {
+      history_index = updateHistory(history, history_index, command_string);
+
+      for(int i = 0; i < history_index; i++)
+      {
+        printf("%d: %s", i, history[i]);
+      }
+    }
     else
     {
       pid_t pid = fork();
 
       if (pid == -1) // Process failed
       {
-        perror("Fork Failed.");
+        perror("fork failed: ");
         exit(1);
       }
 
@@ -137,13 +153,13 @@ int main() {
       {
         int status;
         waitpid(pid, &status, 0);
+        history_index = updateHistory(history, history_index, command_string);
         fflush(NULL);
       }
     }
 
-
     // Cleanup allocated memory
-    for (int i = 0; i < MAX_NUM_ARGUMENTS; i++ )
+    for (int i = 0; i < MAX_NUM_ARGUMENTS; i++)
     {
       if (token[i] != NULL)
       {
@@ -159,4 +175,23 @@ int main() {
 
   return 0;
   // e2520ca2-76f3-90d6-0242ac120003
+}
+
+int updateHistory(char history[][MAX_COMMAND_SIZE], int history_index, char *command_string)
+{
+  if (history_index == 15)
+  {  
+    for (int i = 1; i < 15; i++)
+    {
+      strcpy(history[i-1], history[i]);
+    }
+    strcpy(history[14], command_string);
+  }
+  else
+  {
+    strcpy(history[history_index], command_string);
+    history_index++;
+  }
+
+  return history_index;
 }
