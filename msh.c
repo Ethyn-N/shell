@@ -33,22 +33,29 @@
 
 #define WHITESPACE " \t\n"      // We want to split our command line up into tokens
                                 // so we need to define what delimits our tokens.
-                                // In this case  white space
+                                // In this case white space
                                 // will separate the tokens on our command line
 
 #define MAX_COMMAND_SIZE 255    // The maximum command-line size
 
 #define MAX_NUM_ARGUMENTS 5     // Mav shell only supports four arguments
 
+#define MAX_HISTORY_SIZE 15 // The maximum history size
+
+#define MAX_PID_SIZE 15 // The maximum pids size
+
 int updateHistory(char history[][MAX_COMMAND_SIZE], int history_index, char *command_string);
+int updatePids(int pids[MAX_PID_SIZE], int pids_index, int pid);
 
 int main() 
 {
-
-  char *command_string = (char*) malloc( MAX_COMMAND_SIZE );
+  char *command_string = (char*) malloc(MAX_COMMAND_SIZE);
  
-  char history[15][MAX_COMMAND_SIZE] = { 0 };
+  char history[MAX_HISTORY_SIZE][MAX_COMMAND_SIZE] = { 0 };
   int history_index = 0;
+
+  int pids[MAX_PID_SIZE] = { 0 };
+  int pids_index = 0;
     
   while (1) 
   {
@@ -137,13 +144,29 @@ int main()
       history_index = updateHistory(history, history_index, command_string);
       
     }
-    else if (strcmp("history", token[0]) == 0)
+    else if (strcmp("history", token[0]) == 0 && token[1] == NULL)
     {
       history_index = updateHistory(history, history_index, command_string);
 
       for(int i = 0; i < history_index; i++)
       {
         printf("%d: %s", i, history[i]);
+      }
+    }
+    else if (strcmp("history", token[0]) == 0 && token[1] != NULL)
+    {
+      if (strcmp("-p", token[1]) != 0)
+      {
+        printf("%s: invalid option -- '%s'\n", token[0], token[1]);
+        history_index = updateHistory(history, history_index, command_string);
+        continue;
+      }
+
+      history_index = updateHistory(history, history_index, command_string);
+
+      for(int i = 0; i < pids_index; i++)
+      {
+        printf("%d: %d\n", i, pids[i]);
       }
     }
     else
@@ -163,7 +186,7 @@ int main()
         {
           printf("%s: Command not found.\n", token[0]);
         }
-        //Exit child process before the parent process.
+        // Exit child process before the parent process
         exit(1);
       }
       else // Parent process
@@ -171,6 +194,8 @@ int main()
         int status;
         waitpid(pid, &status, 0);
         history_index = updateHistory(history, history_index, command_string);
+        pids_index = updatePids(pids, pids_index, pid);
+        printf("%d\n", pid);
         fflush(NULL);
       }
     }
@@ -197,13 +222,13 @@ int main()
 // Updates history array with most recent commands
 int updateHistory(char history[][MAX_COMMAND_SIZE], int history_index, char *command_string)
 {
-  if (history_index == 15)
+  if (history_index == MAX_HISTORY_SIZE)
   {  
-    for (int i = 1; i < 15; i++)
+    for (int i = 0; i < MAX_HISTORY_SIZE - 1; i++)
     {
-      strcpy(history[i-1], history[i]);
+      strcpy(history[i], history[i+1]);
     }
-    strcpy(history[14], command_string);
+    strcpy(history[MAX_HISTORY_SIZE-1], command_string);
   }
   else
   {
@@ -212,4 +237,23 @@ int updateHistory(char history[][MAX_COMMAND_SIZE], int history_index, char *com
   }
 
   return history_index;
+}
+
+int updatePids(int pids[MAX_PID_SIZE], int pids_index, int pid)
+{
+  if (pids_index == MAX_PID_SIZE)
+  {
+    for (int i = 0; i < MAX_PID_SIZE - 1; i++)
+    {
+      pids[i] = pids[i+1];
+    }
+    pids[MAX_PID_SIZE-1] = pid;
+  }
+  else
+  {
+    pids[pids_index] = pid;
+    pids_index++;
+  }
+
+  return pids_index++;
 }
