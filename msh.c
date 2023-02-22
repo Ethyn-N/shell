@@ -62,6 +62,21 @@ int main()
     // is no input
     while (!fgets(command_string, MAX_COMMAND_SIZE, stdin));
 
+    // If command line input has '!', find corresponding history if there is one
+    if (command_string[0] == '!')
+    {
+      char temp[MAX_COMMAND_SIZE];
+      strncpy(temp, command_string + 1, strlen(command_string) - 2);
+      int command_number = atoi(temp);
+      if (command_number <= 0 || command_number >= history_index)
+      {
+        printf("Command not in history.\n");
+        history_index = updateHistory(history, history_index, command_string);
+        continue;
+      }
+      strcpy(command_string, history[command_number]);
+    }
+
     /* Parse input */
     char *token[MAX_NUM_ARGUMENTS];
 
@@ -119,6 +134,8 @@ int main()
       {
         printf("%s: Directory not found.\n", token[1]);
       }
+      history_index = updateHistory(history, history_index, command_string);
+      
     }
     else if (strcmp("history", token[0]) == 0)
     {
@@ -177,6 +194,7 @@ int main()
   // e2520ca2-76f3-90d6-0242ac120003
 }
 
+// Updates history array with most recent commands
 int updateHistory(char history[][MAX_COMMAND_SIZE], int history_index, char *command_string)
 {
   if (history_index == 15)
