@@ -69,13 +69,21 @@ int main()
     // is no input
     while (!fgets(command_string, MAX_COMMAND_SIZE, stdin));
 
-    // If command line input has '!', find corresponding history if there is one
+    // If the command line input has '!' as the first character, 
+    // find the corresponding history if there is one
+    // and overwrite command_str with the command in history.
     if (command_string[0] == '!')
     {
       char temp[MAX_COMMAND_SIZE];
-      strncpy(temp, command_string + 1, strlen(command_string) - 2);
+
+      // Copy rest of command_string without '!' into temp.
+      strncpy(temp, command_string + 1, strlen(command_string) - 2); 
+
+      // Find the commmand number given and look if it is in history.
+      // If not in history, print not in history, upadate history, and continue.
+      // Otherwise, overwrite command_str with the command in history.
       int command_number = atoi(temp);
-      if (command_number <= 0 || command_number >= history_index)
+      if (command_number < 0 || command_number >= history_index)
       {
         printf("Command not in history.\n");
         history_index = updateHistory(history, history_index, command_string);
@@ -126,15 +134,19 @@ int main()
     //   printf("token[%d] = %s\n", token_index, token[token_index] );  
     // }
 
+    // Continue if user inputs enters a blank line.
     if (token[0] == NULL)
     {
       continue;
     }
 
+    // Program exits if "quit" or "exit" command inoked.
     if ((strcmp("quit", token[0]) == 0) || (strcmp("exit", token[0]) == 0))
     {
       exit(0);
     }
+
+    // If valid directory exists, chdir and update history.
     else if (strcmp("cd", token[0]) == 0)
     {
       if (chdir(token[1]) == -1)
@@ -142,8 +154,10 @@ int main()
         printf("%s: Directory not found.\n", token[1]);
       }
       history_index = updateHistory(history, history_index, command_string);
-      
     }
+
+    // If "history" command is invoked without parameters,
+    // update history and list the last 15 commands entered by the user.
     else if (strcmp("history", token[0]) == 0 && token[1] == NULL)
     {
       history_index = updateHistory(history, history_index, command_string);
