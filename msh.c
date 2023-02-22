@@ -195,7 +195,6 @@ int main()
         waitpid(pid, &status, 0);
         history_index = updateHistory(history, history_index, command_string);
         pids_index = updatePids(pids, pids_index, pid);
-        printf("%d\n", pid);
         fflush(NULL);
       }
     }
