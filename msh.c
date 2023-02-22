@@ -58,7 +58,7 @@ int main() {
     /* Parse input */
     char *token[MAX_NUM_ARGUMENTS];
 
-    for(int i = 0; i < MAX_NUM_ARGUMENTS; i++)
+    for (int i = 0; i < MAX_NUM_ARGUMENTS; i++)
     {
       token[i] = NULL;
     }
@@ -102,22 +102,28 @@ int main() {
       continue;
     }
 
-    if ((strcmp(token[0], "quit") == 0) || (strcmp(token[0], "exit") == 0))
+    if ((strcmp("quit", token[0]) == 0) || (strcmp("exit", token[0]) == 0))
     {
       exit(0);
+    }
+    else if (strcmp("cd", token[0]) == 0)
+    {
+      if (chdir(token[1]) == -1)
+      {
+        printf("%s: Directory not found.\n", token[1]);
+      }
     }
     else
     {
       pid_t pid = fork();
 
-      //Process was not created. fork() didn't work.
-      if (pid == -1)
+      if (pid == -1) // Process failed
       {
         perror("Fork Failed.");
         exit(1);
       }
 
-      if (pid == 0)
+      if (pid == 0) // Child process
       {
         int ret = execvp(token[0], token);
         if (ret == -1)
@@ -127,7 +133,7 @@ int main() {
         //Exit child process before the parent process.
         exit(1);
       }
-      else
+      else // Parent process
       {
         int status;
         waitpid(pid, &status, 0);
@@ -137,9 +143,9 @@ int main() {
 
 
     // Cleanup allocated memory
-    for(int i = 0; i < MAX_NUM_ARGUMENTS; i++ )
+    for (int i = 0; i < MAX_NUM_ARGUMENTS; i++ )
     {
-      if(token[i] != NULL)
+      if (token[i] != NULL)
       {
         free(token[i]);
       }
