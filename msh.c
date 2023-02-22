@@ -80,7 +80,7 @@ int main()
       strncpy(temp, command_string + 1, strlen(command_string) - 2); 
 
       // Find the commmand number given and look if it is in history.
-      // If not in history, print not in history, upadate history, and continue.
+      // If not in history, print "Command not in history.", upadate history, and continue.
       // Otherwise, overwrite command_str with the command in history.
       int command_number = atoi(temp);
       if (command_number < 0 || command_number >= history_index)
@@ -140,7 +140,7 @@ int main()
       continue;
     }
 
-    // Program exits if "quit" or "exit" command inoked.
+    // Program exits if "quit" or "exit" command invoked.
     if ((strcmp("quit", token[0]) == 0) || (strcmp("exit", token[0]) == 0))
     {
       exit(0);
@@ -167,8 +167,12 @@ int main()
         printf("%d: %s", i, history[i]);
       }
     }
+
+    // If "history" command is invoked with parameters,
+    // validate parameter and list the last 15 PID commands entered by user.
     else if (strcmp("history", token[0]) == 0 && token[1] != NULL)
     {
+      // If parameter is not "-p", print invalid option, update history, and continue.
       if (strcmp("-p", token[1]) != 0)
       {
         printf("%s: invalid option -- '%s'\n", token[0], token[1]);
@@ -183,32 +187,44 @@ int main()
         printf("%d: %d\n", i, pids[i]);
       }
     }
+
+    // Fork calls for UNIX commands
     else
     {
       pid_t pid = fork();
 
-      if (pid == -1) // Process failed
+      // Process failed
+      if (pid == -1) 
       {
         perror("fork failed: ");
         exit(1);
       }
 
-      if (pid == 0) // Child process
+      // Child process
+      if (pid == 0) 
       {
+        // Call process in command_line with parameters
         int ret = execvp(token[0], token);
         if (ret == -1)
         {
           printf("%s: Command not found.\n", token[0]);
         }
-        // Exit child process before the parent process
+
+        // Exit child process before the parent process.
         exit(1);
       }
-      else // Parent process
+
+      // Parent process
+      else 
       {
+        // Wait for child process to terminate.
         int status;
         waitpid(pid, &status, 0);
+
+        // Update history and pids.
         history_index = updateHistory(history, history_index, command_string);
         pids_index = updatePids(pids, pids_index, pid);
+
         fflush(NULL);
       }
     }
@@ -232,9 +248,11 @@ int main()
   // e2520ca2-76f3-90d6-0242ac120003
 }
 
-// Updates history array with most recent commands
+// Updates history array with 15 most recent commands.
 int updateHistory(char history[][MAX_COMMAND_SIZE], int history_index, char *command_string)
 {
+  // If history is full, pop first command and push new command.
+  // Reorder history array.
   if (history_index == MAX_HISTORY_SIZE)
   {  
     for (int i = 0; i < MAX_HISTORY_SIZE - 1; i++)
@@ -243,6 +261,8 @@ int updateHistory(char history[][MAX_COMMAND_SIZE], int history_index, char *com
     }
     strcpy(history[MAX_HISTORY_SIZE-1], command_string);
   }
+
+  // If history is not full, add new command to history and increase history_index.
   else
   {
     strcpy(history[history_index], command_string);
@@ -252,8 +272,11 @@ int updateHistory(char history[][MAX_COMMAND_SIZE], int history_index, char *com
   return history_index;
 }
 
+// Updates pids array with 15 most recent PID commands.
 int updatePids(int pids[MAX_PID_SIZE], int pids_index, int pid)
 {
+  // If pids is full, pop first PID and push new PID.
+  // Reorder pid array.
   if (pids_index == MAX_PID_SIZE)
   {
     for (int i = 0; i < MAX_PID_SIZE - 1; i++)
@@ -262,6 +285,8 @@ int updatePids(int pids[MAX_PID_SIZE], int pids_index, int pid)
     }
     pids[MAX_PID_SIZE-1] = pid;
   }
+
+  // If pids is not full, add new PID to history and increase pids_index.
   else
   {
     pids[pids_index] = pid;
