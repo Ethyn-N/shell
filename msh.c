@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
+#include <ctype.h>
 #include <signal.h>
 
 #define WHITESPACE " \t\n"      // We want to split our command line up into tokens
@@ -46,6 +47,7 @@
 
 int updateHistory(char history[][MAX_COMMAND_SIZE], int history_index, char *command_string);
 int updatePids(int pids[MAX_PID_SIZE], int pids_index, int pid);
+void trim(char *str);
 
 int main() 
 {
@@ -68,25 +70,38 @@ int main()
     // inputs something since fgets returns NULL when there
     // is no input
     while (!fgets(command_string, MAX_COMMAND_SIZE, stdin));
+    trim(command_string);
 
-    // If the command line input has '!' as the first character, 
+    // If the command line input has '!' as the first character and a history input, 
     // find the corresponding history if there is one
     // and overwrite command_str with the command in history.
-    if (command_string[0] == '!')
+    if (command_string[0] == '!' && strlen(command_string) > 1)
     {
       char temp[MAX_COMMAND_SIZE];
+      int digit = 1;
 
       // Copy rest of command_string without '!' into temp.
-      strncpy(temp, command_string + 1, strlen(command_string) - 2); 
+      strncpy(temp, command_string + 1, strlen(command_string));
+
+      // Check if temp contains any non numeric values
+      for (int i = 0; i < strlen(temp); i++)
+      {
+        if(!isdigit(temp[i]))
+        {
+          digit = 0;
+          break;
+        }
+      }
 
       // Find the commmand number given and look if it is in history.
-      // If not in history, print "Command not in history.", upadate history, and continue.
+      // If not in history, print "Command not in history.", upadate history and pids, and continue.
       // Otherwise, overwrite command_str with the command in history.
       int command_number = atoi(temp);
-      if (command_number < 0 || command_number >= history_index)
+      if (command_number >= history_index || digit != 1)
       {
         printf("Command not in history.\n");
         history_index = updateHistory(history, history_index, command_string);
+        pids_index = updatePids(pids, pids_index, -1);
         continue;
       }
       strcpy(command_string, history[command_number]);
@@ -146,7 +161,7 @@ int main()
       exit(0);
     }
 
-    // If valid directory exists, chdir and update history.
+    // If valid directory exists, chdir and update history and pids.
     else if (strcmp("cd", token[0]) == 0)
     {
       if (chdir(token[1]) == -1)
@@ -154,37 +169,39 @@ int main()
         printf("%s: Directory not found.\n", token[1]);
       }
       history_index = updateHistory(history, history_index, command_string);
+      pids_index = updatePids(pids, pids_index, -1);
     }
 
     // If "history" command is invoked without parameters,
-    // update history and list the last 15 commands entered by the user.
+    // update history and pids and list the last 15 commands entered by the user.
     else if (strcmp("history", token[0]) == 0 && token[1] == NULL)
     {
       history_index = updateHistory(history, history_index, command_string);
+      pids_index = updatePids(pids, pids_index, -1);
 
       for(int i = 0; i < history_index; i++)
       {
-        printf("%d: %s", i, history[i]);
+        printf("%d: %s\n", i, history[i]);
       }
     }
 
     // If "history" command is invoked with parameters,
-    // validate parameter and list the last 15 PID commands entered by user.
+    // validate parameter and list the last 15 commands, including pids, entered by user.
     else if (strcmp("history", token[0]) == 0 && token[1] != NULL)
     {
-      // If parameter is not "-p", print invalid option, update history, and continue.
+      history_index = updateHistory(history, history_index, command_string);
+      pids_index = updatePids(pids, pids_index, -1);
+
+      // If parameter is not "-p", print invalid option and continue.
       if (strcmp("-p", token[1]) != 0)
       {
         printf("%s: invalid option -- '%s'\n", token[0], token[1]);
-        history_index = updateHistory(history, history_index, command_string);
         continue;
       }
 
-      history_index = updateHistory(history, history_index, command_string);
-
       for(int i = 0; i < pids_index; i++)
       {
-        printf("%d: %d\n", i, pids[i]);
+        printf("%d: %s %d\n", i, history[i], pids[i]);
       }
     }
 
@@ -203,7 +220,7 @@ int main()
       // Child process
       if (pid == 0) 
       {
-        // Call process in command_line with parameters
+        // Call process in command_line with parameters.
         int ret = execvp(token[0], token);
         if (ret == -1)
         {
@@ -294,4 +311,15 @@ int updatePids(int pids[MAX_PID_SIZE], int pids_index, int pid)
   }
 
   return pids_index++;
+}
+
+// Trim newline character.
+void trim(char *str)
+{
+  int l = strlen(str);
+
+  if (str[l-1] == '\n')
+  {
+    str[l-1] = 0;
+  }
 }
