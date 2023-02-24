@@ -201,7 +201,7 @@ int main()
 
       for(int i = 0; i < pids_index; i++)
       {
-        printf("%d: %s %d\n", i, history[i], pids[i]);
+        printf("%d: %-12s %d\n", i, history[i], pids[i]);
       }
     }
 
