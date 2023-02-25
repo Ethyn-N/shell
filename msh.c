@@ -181,7 +181,7 @@ int main()
 
       for(int i = 0; i < history_index; i++)
       {
-        printf("%d: %s\n", i, history[i]);
+        printf("%2d: %-12s\n", i, history[i]);
       }
     }
 
@@ -201,7 +201,7 @@ int main()
 
       for(int i = 0; i < pids_index; i++)
       {
-        printf("%d: %-12s %d\n", i, history[i], pids[i]);
+        printf("%2d: %-12s %d\n", i, history[i], pids[i]);
       }
     }
 
